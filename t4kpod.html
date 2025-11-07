@@ -13,6 +13,41 @@
   }
   
 </style>
+
+<!-- JS: Mausposition + Hoverstatus an Host schicken -->
+<script>
+(function(){
+  // Trage hier die exakte Origin deiner Host-Seite ein (deine Cargo-Domain):
+  // Z.B. 'https://deine-domain.cargo.site' oder 'https://deinedomain.tld'
+  const PARENT_ORIGIN = 'https://piepdesignv2.cargo.site/t4kpod'; // zum Testen ok, danach auf feste Origin setzen
+
+  const HOVER_SELECTOR = 'a,button,[role="button"],[href],input,select,textarea,canvas,[data-link]';
+
+  function isInteractive(el){
+    try { return !!(el && el.closest && el.closest(HOVER_SELECTOR)); }
+    catch(e){ return false; }
+  }
+
+  function post(type, payload){
+    try { window.parent.postMessage({ type, ...payload }, PARENT_ORIGIN); } catch(e){}
+  }
+
+  let lastHover = null;
+
+  window.addEventListener('mousemove', (e) => {
+    const hover = !!isInteractive(e.target);
+    const msg = { x: e.clientX, y: e.clientY };
+    if (hover !== lastHover) {
+      lastHover = hover;
+      msg.hover = hover;
+    }
+    post('cursor', msg);
+  }, { passive:true });
+
+  window.addEventListener('mouseenter', () => post('cursor:enter', {}), true);
+  window.addEventListener('mouseleave', () => post('cursor:leave', {}), true);
+})();
+</script>
 </head>
 
 <body>
