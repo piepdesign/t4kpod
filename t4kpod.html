@@ -5,18 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>t4kpod – Flipbook iFrame</title>
 
-  <!-- Systemcursor im iFrame vollständig aus + keine Scrollbars -->
   <style>
+    /* Systemcursor im iFrame vollständig aus + keine Scrollbars */
     html, body, body *, body *:hover, body *:focus, body *:active,
     img, video, canvas, svg, figure, [role="button"], [href], button, a,
     :fullscreen, ::backdrop { cursor: none !important; }
     html, body {
       margin: 0; padding: 0;
-      overflow: hidden !important; /* keine Scrollbars */
+      overflow: hidden !important;
       width: 100%; height: 100%;
       background: transparent;
     }
-    /* Fallbacks für etwaige Scrollcontainer */
     ::-webkit-scrollbar { display: none; }
     * { scrollbar-width: none; -ms-overflow-style: none; }
 
@@ -29,88 +28,54 @@
     }
 
     /* Alle Schatten entfernen */
-    #t4kpod-flipbook-root .page {
-      box-shadow: none !important;
-      border-radius: 4px;
-      overflow: hidden;
-      background: #fff;
-    }
+    #t4kpod-flipbook-root .page { box-shadow: none !important; border-radius: 4px; overflow: hidden; background: #fff; }
     #t4kpod-flipbook-root .stf__shadow,
     #t4kpod-flipbook-root .stf__shadowTop,
     #t4kpod-flipbook-root .stf__shadow-bottom,
     #t4kpod-flipbook-root .stf__hardShadow,
-    #t4kpod-flipbook-root .stf__softShadow {
-      box-shadow: none !important;
-      filter: none !important;
-    }
-    #t4kpod-flipbook-root .t4kpod-page {
-      background: #fff;
-      display: block;
-      overflow: hidden;
-      backface-visibility: hidden;
-      transform: translateZ(0);
-    }
-    #t4kpod-flipbook-root .t4kpod-page img {
-      display: block;
-      width: 100.2%;
-      height: 100.2%;
-      object-fit: contain;
-      transform: translate(-0.15px, -0.15px);
-      image-rendering: auto;
-    }
+    #t4kpod-flipbook-root .stf__softShadow { box-shadow: none !important; filter: none !important; }
+    #t4kpod-flipbook-root .t4kpod-page { background: #fff; display: block; overflow: hidden; backface-visibility: hidden; transform: translateZ(0); }
+    #t4kpod-flipbook-root .t4kpod-page img { display: block; width: 100.2%; height: 100.2%; object-fit: contain; transform: translate(-0.15px, -0.15px); image-rendering: auto; }
   </style>
 
   <!-- Bibliotheken -->
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js";
-  </script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js";</script>
   <link href="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/css/page-flip.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
 </head>
 <body>
 
-  <!-- Flipbook – Menü zentriert über dem PDF -->
+  <!-- Flipbook -->
   <div id="t4kpod-flipbook-root" style="width:100%;max-width:1100px;height:80vh;margin:0 auto;border-radius:16px;overflow:visible;background:transparent;">
     <div class="t4kpod-wrap" style="width:100%;height:100%;position:relative;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;">
-
-      <!-- MENÜ -->
+      <!-- Menü -->
       <div class="t4kpod-topbar" style="padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;">
         <div class="t4kpod-pill" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);color:#e6e8ee;border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:8px 12px;font:500 13px/1.2 system-ui,Inter,Arial;backdrop-filter:blur(6px);">
-
           <button aria-label="Vorherige Seite" class="t4kpod-icon" data-act="prev" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;transition:transform .15s ease,background .2s ease" title="Zurück">
             <svg fill="none" height="18" width="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
           </button>
-
           <span class="t4kpod-sep" style="width:1px;height:16px;background:rgba(255,255,255,.12)"></span>
-
           <button aria-label="Nächste Seite" class="t4kpod-icon" data-act="next" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;transition:transform .15s ease,background .2s ease" title="Weiter">
             <svg fill="none" height="18" width="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </button>
-
           <span class="t4kpod-sep" style="width:1px;height:16px;background:rgba(255,255,255,.12)"></span>
-
-          <button aria-label="Zoom verkleinern" class="t4kpod-icon" data-act="zoomOut" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;transition:transform .15s ease,background .2s ease" title="Zoom -">
+          <button aria-label="Zoom -" class="t4kpod-icon" data-act="zoomOut" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;transition:transform .15s ease,background .2s ease" title="Zoom -">
             <svg fill="none" height="18" width="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><line x1="5" x2="19" y1="12" y2="12"></line></svg>
           </button>
-
-          <button aria-label="Zoom vergrößern" class="t4kpod-icon" data-act="zoomIn" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;transition:transform .15s ease,background .2s ease" title="Zoom +">
+          <button aria-label="Zoom +" class="t4kpod-icon" data-act="zoomIn" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;transition:transform .15s ease,background .2s ease" title="Zoom +">
             <svg fill="none" height="18" width="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><line x1="12" x2="12" y1="5" y2="19"></line><line x1="5" x2="19" y1="12" y2="12"></line></svg>
           </button>
-
           <span class="t4kpod-sep" style="width:1px;height:16px;background:rgba(255,255,255,.12)"></span>
           <span class="t4kpod-counter" style="font:600 12px/1 system-ui,Inter,Arial;letter-spacing:.3px;color:#a7adbb">
             <span id="t4kpod-page"></span> / <span id="t4kpod-pages">68</span>
           </span>
-
         </div>
       </div>
 
-      <!-- VIEWER -->
+      <!-- Viewer -->
       <div class="t4kpod-viewer" style="position:relative;flex:1;display:grid;place-items:center;background:transparent;min-height:320px;padding-bottom:32px;width:100%;max-width:100%;">
         <div class="stf__parent" id="t4kpod-flip" style="will-change:transform;min-width:280px;min-height:320px;width:100%;max-width:4000px;display:block;transform:scale(0.8);transform-origin:center center;"></div>
-
         <div id="t4kpod-loader" style="position:absolute;inset:0;display:none;place-items:center;gap:12px;color:rgb(230,232,238);font:500 14px/1.2 system-ui,Inter,Arial;background:transparent;">
           <div class="t4kpod-spin" style="width:42px;height:42px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:#00d1b2;animation:t4kpod-spin 1s linear infinite"></div>
           <div>PDF wird geladen…</div>
@@ -119,34 +84,30 @@
     </div>
   </div>
 
-  <!-- iFrame → Host: Position + Hover + Enter/Leave -->
+  <!-- iFrame → Host: nur Hover/Enter/Leave -->
   <script>
   (function(){
-    // Empfohlen: exakte Cargo-Domain eintragen, z.B. 'https://dein-name.cargo.site'
+    // Optional: exakte Cargo-Domain einsetzen, z.B. 'https://dein-name.cargo.site'
     // const PARENT_ORIGIN = 'https://DEINE-DOMAIN.tld';
     const PARENT_ORIGIN = document.referrer?.split('/').slice(0,3).join('/') || '*';
-
     const HOVER_SELECTOR = 'a, button, [role="button"], [href], input, select, textarea, canvas, [data-link]';
 
-    function isInteractive(el){
+    const isInteractive = (el) => {
       try { return !!(el && el.closest && el.closest(HOVER_SELECTOR)); }
       catch(e){ return false; }
-    }
-    function post(type, payload){
+    };
+    const post = (type, payload) => {
       try { window.parent.postMessage({ type, ...payload }, PARENT_ORIGIN); } catch(e){}
-    }
+    };
 
     let lastHover = null;
 
-    // Sende IMMER x/y relativ zum iFrame-Viewport + optional hover
     window.addEventListener('mousemove', (e) => {
       const hover = !!isInteractive(e.target);
-      const payload = { x: e.clientX, y: e.clientY };
       if (hover !== lastHover){
         lastHover = hover;
-        payload.hover = hover;
+        post('cursor', { hover });
       }
-      post('cursor', payload);
     }, { passive:true });
 
     window.addEventListener('mouseenter', () => post('cursor:enter', {}), true);
@@ -158,7 +119,7 @@
   <script>
   (function(){
     "use strict";
-    const PDF_URL = "https://cdn.jsdelivr.net/gh/piepdesign/t4kpod@main/t4kpod.pdf"; // eigene PDF hier einsetzen
+    const PDF_URL = "https://cdn.jsdelivr.net/gh/piepdesign/t4kpod@main/t4kpod.pdf";
     const container = document.getElementById("t4kpod-flip");
     const pageEl = document.getElementById("t4kpod-page");
     const pagesEl = document.getElementById("t4kpod-pages");
