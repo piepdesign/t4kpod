@@ -17,7 +17,7 @@
   <!-- Flipbook – Menü zentriert über dem PDF -->
   <div id="t4kpod-flipbook-root" style="width:100%;max-width:1100px;height:80vh;margin:0 auto;border-radius:16px;overflow:visible;background:transparent;">
     <div class="t4kpod-wrap" style="width:100%;height:100%;position:relative;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;">
-      <!-- MENÜ -->
+      <!-- MENÜ (Zoom-Optionen entfernt) -->
       <div class="t4kpod-topbar" style="padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;">
         <div class="t4kpod-pill" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);color:#e6e8ee;border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:8px 12px;font:500 13px/1.2 system-ui,Inter,Arial;backdrop-filter:blur(6px);">
           <button aria-label="Vorherige Seite" class="t4kpod-icon" data-act="prev" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;cursor:pointer;transition:transform .15s ease,background .2s ease" title="Zurück">
@@ -28,13 +28,6 @@
             <svg fill="none" height="18" width="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </button>
           <span class="t4kpod-sep" style="width:1px;height:16px;background:rgba(255,255,255,.12)"></span>
-          <button aria-label="Zoom verkleinern" class="t4kpod-icon" data-act="zoomOut" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;cursor:pointer;transition:transform .15s ease,background .2s ease" title="Zoom -">
-            <svg fill="none" height="18" width="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><line x1="5" x2="19" y1="12" y2="12"></line></svg>
-          </button>
-          <button aria-label="Zoom vergrößern" class="t4kpod-icon" data-act="zoomIn" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;cursor:pointer;transition:transform .15s ease,background .2s ease" title="Zoom +">
-            <svg fill="none" height="18" width="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><line x1="12" x2="12" y1="5" y2="19"></line><line x1="5" x2="19" y1="12" y2="12"></line></svg>
-          </button>
-          <span class="t4kpod-sep" style="width:1px;height:16px;background:rgba(255,255,255,.12)"></span>
           <span class="t4kpod-counter" style="font:600 12px/1 system-ui,Inter,Arial;letter-spacing:.3px;color:#a7adbb">
             <span id="t4kpod-page"></span> / <span id="t4kpod-pages">68</span>
           </span>
@@ -42,7 +35,7 @@
       </div>
 
       <!-- VIEWER -->
-      <!-- WICHTIG: topbündig ausrichten + Transformationsursprung oben, damit das Flipbook beim Zoomen nach unten wächst -->
+      <!-- Transformationsursprung oben, initiale Skalierung bleibt, aber ohne Menü-Optionen -->
       <div class="t4kpod-viewer" style="position:relative;flex:1;display:grid;align-items:start;justify-items:center;background:transparent;min-height:320px;padding-bottom:32px;width:100%;max-width:100%;">
         <div class="stf__parent" id="t4kpod-flip" style="will-change:transform;min-width:280px;min-height:320px;width:100%;max-width:4000px;display:block;transform:scale(0.8);transform-origin:top center;"></div>
         <div id="t4kpod-loader" style="position:absolute;inset:0;display:none;place-items:center;gap:12px;color:rgb(230,232,238);font:500 14px/1.2 system-ui,Inter,Arial;background:transparent;">
@@ -171,8 +164,6 @@
     const root = document.getElementById("t4kpod-flipbook-root");
     const viewer = root.querySelector('.t4kpod-viewer');
 
-    const state = { zoom: 0.8 };
-    const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
     const setLoading = (on)=> loader.style.display = on ? 'grid' : 'none';
 
     async function pdfToImages(url, pixelRatio){
@@ -224,16 +215,6 @@
         const q = (sel)=> root.querySelector(sel);
         q('[data-act="prev"]').addEventListener('click', ()=> flip.flipPrev());
         q('[data-act="next"]').addEventListener('click', ()=> flip.flipNext());
-        q('[data-act="zoomIn"]').addEventListener('click', ()=>{
-          state.zoom = clamp(state.zoom + 0.1, 0.6, 2.2);
-          container.style.transform = `scale(${state.zoom})`;
-          container.style.transformOrigin = 'top center';
-        });
-        q('[data-act="zoomOut"]').addEventListener('click', ()=>{
-          state.zoom = clamp(state.zoom - 0.1, 0.6, 2.2);
-          container.style.transform = `scale(${state.zoom})`;
-          container.style.transformOrigin = 'top center';
-        });
 
         flip.on('flip', (e)=>{ pageEl.textContent = String(e.data + 1); });
       };
