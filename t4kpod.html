@@ -1,18 +1,19 @@
 <head>
-  <style>
-    /* Systemcursor im iFrame aus + keine Scrollbars */
-    html, body, body *, body *:hover, body *:focus, body *:active,
-    img, video, canvas, svg, figure, [role="button"], [href], button, a,
-    :fullscreen, ::backdrop { cursor: none !important; }
-    html, body {
-      margin: 0; padding: 0;
-      overflow: hidden !important;
-      width: 100%; height: 100%;
-    }
-    /* Fallback: falls doch einmal scrollbare Container auftauchen */
-    ::-webkit-scrollbar { display: none; }
-    * { scrollbar-width: none; -ms-overflow-style: none; }
-  </style>
+<style>
+  html, body, body *, body *:hover, body *:focus, body *:active,
+  img, video, canvas, svg, figure, [role="button"], [href], button, a,
+  :fullscreen, ::backdrop { cursor: none !important; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden !important; /* keine Scrollbars, egal was passiert */
+    width: 100%;
+    height: 100%;
+  }
+
+</style>
+
 </head>
 
 <body>
@@ -20,11 +21,11 @@
 <!-- Flipbook – Menü zentriert über dem PDF -->
 <div id="t4kpod-flipbook-root" style="width:100%;max-width:1100px;height:80vh;margin:0 auto;border-radius:16px;overflow:visible;background:transparent;">
   <div class="t4kpod-wrap" style="width:100%;height:100%;position:relative;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;">
-    
+
     <!-- MENÜ -->
     <div class="t4kpod-topbar" style="padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;">
       <div class="t4kpod-pill" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);color:#e6e8ee;border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:8px 12px;font:500 13px/1.2 system-ui,Inter,Arial;backdrop-filter:blur(6px);">
-        
+
         <button aria-label="Vorherige Seite" class="t4kpod-icon" data-act="prev" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;cursor:pointer;transition:transform .15s ease,background .2s ease" title="Zurück">
           <svg fill="none" height="18" width="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
@@ -56,7 +57,7 @@
     <!-- VIEWER -->
     <div class="t4kpod-viewer" style="position:relative;flex:1;display:grid;place-items:center;background:transparent;min-height:320px;padding-bottom:32px;width:100%;max-width:100%;">
       <div class="stf__parent" id="t4kpod-flip" style="will-change:transform;min-width:280px;min-height:320px;width:100%;max-width:4000px;display:block;transform:scale(0.8);transform-origin:center center;"></div>
-      
+
       <div id="t4kpod-loader" style="position:absolute;inset:0;display:none;place-items:center;gap:12px;color:rgb(230,232,238);font:500 14px/1.2 system-ui,Inter,Arial;background:transparent;">
         <div class="t4kpod-spin" style="width:42px;height:42px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:#00d1b2;animation:t4kpod-spin 1s linear infinite"></div>
         <div>PDF wird geladen…</div>
@@ -64,6 +65,54 @@
     </div>
   </div>
 </div>
+
+<script>
+(function(){
+  // === CONFIG ===
+  const PARENT_ORIGIN = window.location !== window.parent.location
+    ? document.referrer?.split('/').slice(0,3).join('/') || "*"   // wenn bekannt
+    : "*"; // Fallback – bei Bedarf hart auf z.B. "https://deine-domain.tld" setzen
+
+  // Welche Elemente sollen im iframe als "interaktiv" gelten?
+  const HOVER_SELECTOR = 'a, button, [role="button"], [href], input, select, textarea, canvas, [data-link]';
+
+  function isInteractive(el){
+    try { return !!(el && el.closest && el.closest(HOVER_SELECTOR)); }
+    catch(e){ return false; }
+  }
+
+  function post(type, payload){
+    try { window.parent.postMessage({ type, ...payload }, PARENT_ORIGIN); }
+    catch(e){}
+  }
+
+  let lastHover = null;
+
+  // Mausbewegung: Position und Hoverstatus senden (clientX/Y relativ zum iframe-Viewport)
+  window.addEventListener('mousemove', (e) => {
+    const hover = !!isInteractive(e.target);
+    if (hover !== lastHover){
+      lastHover = hover;
+      post('cursor', { x: e.clientX, y: e.clientY, hover });
+    } else {
+      post('cursor', { x: e.clientX, y: e.clientY });
+    }
+  }, { passive:true });
+
+  // Enter/Leave für robuste Sichtbarkeit
+  window.addEventListener('mouseenter', () => post('cursor:enter', {}), true);
+  window.addEventListener('mouseleave', () => post('cursor:leave', {}), true);
+
+  // Optional: bei Scroll im iframe Position “auffrischen”
+  window.addEventListener('scroll', () => {
+    // synthetisches Event mit der zuletzt bekannten Position erzeugen geht hier nicht trivial,
+    // deshalb fordern wir den Host nur auf, den letzten Zustand zu zeigen.
+    // In der Praxis reicht das kontinuierliche mousemove völlig aus.
+  }, { passive:true });
+})();
+</script>
+
+
 
   <script>
   (function(){
