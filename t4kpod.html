@@ -57,36 +57,61 @@
   (function(){
     "use strict";
 
-    // Einheitliches Protokoll:
-    // parent erwartet: { __cursorMsg:1, type:'move'|'enter'|'leave', cx, cy, hover? }
+    /* 
+      ➜ Parent unterstützt zwei Formate. Wir senden BEIDE:
+         A) Neu: { __cursorMsg:1, type:'move'|'enter'|'leave', cx, cy, hover? }
+         B) Alt: { type:'cursor', x, y, hover? } | 'cursor:enter' | 'cursor:leave'
+      So ist der Custom Cursor im Parent garantiert aktiv und folgt auch IM iFrame.
+    */
 
-    // Ziel-Origin für postMessage – im Zweifel '*' (Parent filtert selbst streng per Origin)
+    // Ziel-Origin: Parent filtert streng per Origin, daher hier bewusst '*'
     const TARGET_ORIGIN = '*';
 
+    // Welche Elemente im iFrame gelten als "interaktiv" (für aktiven Cursorstil)?
     const HOVER_SELECTOR = 'a, button, [role="button"], [href], input, select, textarea, canvas, [data-link]';
-    function isInteractive(el){ try { return !!(el && el.closest && el.closest(HOVER_SELECTOR)); } catch(e){ return false; } }
+    function isInteractive(el){
+      try { return !!(el && el.closest && el.closest(HOVER_SELECTOR)); }
+      catch(e){ return false; }
+    }
 
-    function post(type, payload){
-      try {
-        window.parent.postMessage({ __cursorMsg:1, type, ...payload }, TARGET_ORIGIN);
-      } catch(e){}
+    function postBoth(kind, payload){
+      // NEUES Protokoll (empfohlen)
+      if (kind === 'move'){
+        window.parent.postMessage({ __cursorMsg:1, type:'move', cx:payload.x, cy:payload.y, hover:payload.hover }, TARGET_ORIGIN);
+      } else if (kind === 'enter'){
+        window.parent.postMessage({ __cursorMsg:1, type:'enter', hover:payload.hover }, TARGET_ORIGIN);
+      } else if (kind === 'leave'){
+        window.parent.postMessage({ __cursorMsg:1, type:'leave' }, TARGET_ORIGIN);
+      }
+
+      // ALTES Protokoll (Kompatibilität / Fallback)
+      if (kind === 'move'){
+        window.parent.postMessage({ type:'cursor', x:payload.x, y:payload.y, hover:payload.hover }, TARGET_ORIGIN);
+      } else if (kind === 'enter'){
+        window.parent.postMessage({ type:'cursor:enter' }, TARGET_ORIGIN);
+      } else if (kind === 'leave'){
+        window.parent.postMessage({ type:'cursor:leave' }, TARGET_ORIGIN);
+      }
     }
 
     let lastHover = null;
 
-    // Mausbewegung (clientX/Y relativ zum iFrame-Viewport)
+    // Mausbewegung im iFrame → Position relativ zum iFrame-Viewport senden
     window.addEventListener('mousemove', (e) => {
       const hover = !!isInteractive(e.target);
-      const msg = { cx: e.clientX, cy: e.clientY };
-      if (hover !== lastHover){ lastHover = hover; msg.hover = hover; }
-      post('move', msg);
+      const changed = (hover !== lastHover);
+      lastHover = hover;
+      postBoth('move', { x:e.clientX, y:e.clientY, hover: changed ? hover : undefined });
     }, { passive:true });
 
-    // Robuste Sichtbarkeit
+    // Eintritt/Austritt (Position beim Eintritt NICHT verändern → kein Sprung)
     window.addEventListener('mouseenter', () => {
-      post('enter', { hover: !!isInteractive(document.elementFromPoint?.(innerWidth/2, innerHeight/2)) });
+      postBoth('enter', { hover:false });
     }, true);
-    window.addEventListener('mouseleave', () => post('leave', {}), true);
+
+    window.addEventListener('mouseleave', () => {
+      postBoth('leave', {});
+    }, true);
   })();
   </script>
 
