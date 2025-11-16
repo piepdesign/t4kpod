@@ -1,0 +1,256 @@
+<head>
+  <style>
+    /* Systemcursor im iFrame aus */
+    html, body, body *, body *:hover, body *:focus, body *:active,
+    img, video, canvas, svg, figure, [role="button"], [href], button, a,
+    :fullscreen, ::backdrop {
+      cursor: none !important;
+    }
+    html, body {
+      margin: 0; padding: 0;
+      overflow: visible !important;
+      width: 100%; height: 100%;
+    }
+    body {
+    }
+  </style>
+</head>
+<body>
+  <!-- Flipbook – Menü zentriert über dem PDF -->
+  <div id="pdf-flipbook-root" style="width:100%;max-width:1100px;height:80vh;margin:0 auto;border-radius:16px;overflow:visible;background:transparent;">
+    <div class="pdf-wrap" style="width:100%;height:100%;position:relative;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;">
+      <!-- MENÜ (Zoom-Optionen entfernt) -->
+      <div class="pdf-topbar" style="padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;">
+        <div class="pdf-pill" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);color:#e6e8ee;border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:8px 12px;font:500 13px/1.2 system-ui,Inter,Arial;backdrop-filter:blur(6px);">
+          <button aria-label="Vorherige Seite" class="pdf-icon" data-act="prev" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;cursor:pointer;transition:transform .15s ease,background .2s ease" title="Zurück">
+            <svg fill="none" height="18" width="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <span class="pdf-sep" style="width:1px;height:16px;background:rgba(255,255,255,.12)"></span>
+          <button aria-label="Nächste Seite" class="pdf-icon" data-act="next" style="all:unset;color:#e6e8ee;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;cursor:pointer;transition:transform .15s ease,background .2s ease" title="Weiter">
+            <svg fill="none" height="18" width="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+          <span class="pdf-sep" style="width:1px;height:16px;background:rgba(255,255,255,.12)"></span>
+          <span class="pdf-counter" style="font:600 12px/1 system-ui,Inter,Arial;letter-spacing:.3px;color:#a7adbb">
+            <span id="pdf-page"></span> / <span id="pdf-pages">...</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- VIEWER -->
+      <div class="pdf-viewer" style="position:relative;flex:1;display:grid;align-items:start;justify-items:center;background:transparent;min-height:320px;padding-bottom:32px;width:100%;max-width:100%;">
+        <div class="stf__parent" id="pdf-flip" style="will-change:transform;min-width:280px;min-height:320px;width:100%;max-width:4000px;display:block;transform:scale(0.8);transform-origin:top center;"></div>
+        <div id="pdf-loader" style="position:absolute;inset:0;display:none;place-items:center;gap:12px;color:rgb(230,232,238);font:500 14px/1.2 system-ui,Inter,Arial;background:transparent;">
+          <div class="pdf-spin" style="width:42px;height:42px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:#00d1b2;animation:pdf-spin 1s linear infinite"></div>
+          <div>PDF wird geladen…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cursor-Bridge -->
+  <script>
+  (function(){
+    "use strict";
+
+    const TARGET_ORIGIN = '*';
+
+    const HOVER_SELECTOR = [
+      'a[href]',
+      'button:not([disabled])',
+      '[role="button"]',
+      '[role="link"]',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+      '[data-link]',
+      '[data-action]',
+      '[data-act]',
+      '[onclick]',
+      '.pdf-icon',
+      'canvas'
+    ].join(',');
+
+    const isInteractive = (el)=>{
+      try { return !!(el && el.closest && el.closest(HOVER_SELECTOR)); }
+      catch(e){ return false; }
+    };
+
+    const post = (type, payload={})=>{
+      try {
+        window.parent.postMessage({ __cursorMsg:1, type, ...payload }, TARGET_ORIGIN);
+      } catch(e){}
+    };
+
+    let hoverNow = false;
+
+    window.addEventListener('pointerover', (e)=>{
+      const on = isInteractive(e.target);
+      if (on !== hoverNow){
+        hoverNow = on;
+        post('move', { cx: (e.clientX ?? 0), cy: (e.clientY ?? 0), hover: hoverNow });
+      }
+    }, { capture:true, passive:true });
+
+    window.addEventListener('pointerout', (e)=>{
+      const fromInteractive = isInteractive(e.target);
+      const to = e.relatedTarget;
+      const toInteractive = isInteractive(to);
+      if (fromInteractive && !toInteractive){
+        hoverNow = false;
+        post('move', { cx: (e.clientX ?? 0), cy: (e.clientY ?? 0), hover: false });
+      }
+    }, { capture:true, passive:true });
+
+    window.addEventListener('mousemove', (e)=>{
+      post('move', { cx: e.clientX, cy: e.clientY });
+    }, { passive:true });
+
+    window.addEventListener('mouseenter', ()=>{
+      post('enter', { hover: hoverNow });
+    }, true);
+    window.addEventListener('mouseleave', ()=>{
+      post('leave', {});
+    }, true);
+  })();
+  </script>
+
+  <style>
+    @keyframes pdf-spin { to { transform: rotate(360deg) } }
+
+    /* Hover-Interaktion */
+    #pdf-flipbook-root .pdf-icon:hover {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.08);
+    }
+
+    /* Alle Schatten entfernen */
+    #pdf-flipbook-root .page { box-shadow: none !important; border-radius: 4px; overflow: hidden; background: #fff; }
+    #pdf-flipbook-root .stf__shadow,
+    #pdf-flipbook-root .stf__shadowTop,
+    #pdf-flipbook-root .stf__shadow-bottom,
+    #pdf-flipbook-root .stf__hardShadow,
+    #pdf-flipbook-root .stf__softShadow { box-shadow: none !important; filter: none !important; }
+
+    #pdf-flipbook-root .pdf-page { background: #fff; display: block; overflow: hidden; backface-visibility: hidden; transform: translateZ(0); }
+    #pdf-flipbook-root .pdf-page img {
+      display: block; width: 100.2%; height: 100.2%;
+      object-fit: contain; transform: translate(-0.15px, -0.15px); image-rendering: auto;
+    }
+  </style>
+
+  <!-- Bibliotheken -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js";</script>
+  <link href="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/css/page-flip.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
+
+  <script>
+  (function(){
+    "use strict";
+
+    const PDF_URL = "https://cdn.jsdelivr.net/gh/piepdesign/flipbook-repository@main/24_0170_hr_kinderbeteiligung_4.pdf"; // bleibt gleich
+    const container = document.getElementById("pdf-flip");
+    const pageEl = document.getElementById("pdf-page");
+    const pagesEl = document.getElementById("pdf-pages");
+    const loader = document.getElementById("pdf-loader");
+    const root = document.getElementById("pdf-flipbook-root");
+    const viewer = root.querySelector('.pdf-viewer');
+
+    const setLoading = (on)=> loader.style.display = on ? 'grid' : 'none';
+
+    async function pdfToImages(url, pixelRatio){
+      const doc = await pdfjsLib.getDocument({ url }).promise;
+      const total = doc.numPages;
+      pagesEl.textContent = String(total - 2);
+      const pages = [];
+      for(let i=1;i<=total;i++){
+        const page = await doc.getPage(i);
+        const viewport = page.getViewport({ scale: pixelRatio });
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        pages.push(canvas.toDataURL('image/png'));
+      }
+      return pages;
+    }
+
+    function initFlip(pages){
+      const tmp = new Image();
+      tmp.onload = ()=>{
+        const viewerRect = viewer.getBoundingClientRect();
+        const aspect = tmp.height / tmp.width;
+        const maxH = Math.max(320, Math.min(viewerRect.height - 48, 2200));
+        const baseH = Math.round(maxH);
+        const baseW = Math.round(baseH / aspect);
+
+        const flip = new St.PageFlip(container, {
+          width: baseW,
+          height: baseH,
+          size: 'stretch',
+          minWidth: 280,
+          minHeight: 320,
+          maxWidth: 2000,
+          maxHeight: 2200,
+          showPageCorners: true,
+          flippingTime: 650,
+          drawShadow: false,
+          autoSize: true,
+          showCover: false,   // sorgt dafür, dass erste/letzte Seite Einzelseiten sind
+          usePortrait: true
+        });
+
+        // *** WICHTIG: alle Seiten (inkl. Cover/Backcover) auf "soft" zwingen ***
+        function forceSoftPages() {
+          const hardElems = container.querySelectorAll('[data-density="hard"]');
+          hardElems.forEach(el => {
+            el.setAttribute('data-density', 'soft');
+          });
+        }
+
+        // Events laut Doku vor loadFromHTML registrieren
+        flip.on('init', forceSoftPages);
+        flip.on('update', forceSoftPages);
+
+        const htmlPages = pages.map((src, idx) => {
+          const el = document.createElement('div');
+          el.className = 'pdf-page';
+          // Standardmäßig soft
+          el.setAttribute('data-density', 'soft');
+          el.innerHTML = `<img src="${src}" alt="Seite ${idx+1}"/>`;
+          return el;
+        });
+
+        flip.loadFromHTML(htmlPages);
+        pageEl.textContent = '0';
+
+        const q = (sel)=> root.querySelector(sel);
+        q('[data-act="prev"]').addEventListener('click', ()=> flip.flipPrev());
+        q('[data-act="next"]').addEventListener('click', ()=> flip.flipNext());
+
+        flip.on('flip', (e)=>{ pageEl.textContent = String(e.data); });
+      };
+      tmp.src = pages[0];
+    }
+
+    (async function run(){
+      try{
+        setLoading(true);
+        const pixelRatio = window.devicePixelRatio > 1 ? 2.4 : 1.6;
+        const pages = await pdfToImages(PDF_URL, pixelRatio);
+        setLoading(false);
+        initFlip(pages);
+      }catch(err){
+        console.error(err);
+        setLoading(false);
+        const msg = document.createElement('div');
+        msg.style.cssText = 'color:#fff;padding:24px;background:rgba(0,0,0,.4);border-radius:12px;';
+        msg.textContent = 'Fehler beim Laden der PDF: ' + err.message;
+        viewer.appendChild(msg);
+      }
+    })();
+  })();
+  </script>
+</body>
